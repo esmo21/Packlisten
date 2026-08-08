@@ -32,7 +32,7 @@ if (!state.trips.length) {
   const template = state.templates[0]
   state.trips.push({ id: id(), name: 'Mallorca 2026', destination: 'Mallorca, Spanien', startDate: '2026-09-14', endDate: '2026-09-24', templateId: template.id, items: template.items.map((item, i) => ({ ...clone(item), id: id(), packed: i < 3 })) })
 }
-let view = { page: 'home', selectedId: null, modal: null, editId: null, mobileNav: false, authMode: 'login' }
+let view = { page: 'home', selectedId: null, modal: null, editId: null, editItemId: null, mobileNav: false, authMode: 'login' }
 
 function persist() {
   localStorage.setItem('packfertig_data', JSON.stringify(state))
@@ -90,13 +90,17 @@ function detail(type) {
   return `${topbar(esc(obj.name), isTrip ? esc(obj.destination) : esc(obj.description))}<main class="content"><button class="back" data-page="${isTrip ? 'trips' : 'templates'}">← Zurück</button>
     <section class="detail-head"><div class="detail-symbol ${isTrip ? 'coral' : obj.color}">${isTrip ? '🧳' : obj.icon}</div><div><span class="kicker">${isTrip ? 'REISE-PACKLISTE' : 'VORLAGE'}</span><h2>${esc(obj.name)}</h2>${isTrip ? `<p>${formatDate(obj.startDate)} – ${formatDate(obj.endDate)}</p>` : `<p>${obj.items.length} Dinge für deine nächste Reise</p>`}</div><button class="secondary" data-action="edit-current">${icon('edit')} Bearbeiten</button><button class="danger-icon" data-action="delete-current">${icon('trash')}</button></section>
     ${isTrip ? `<section class="packing-progress"><div><strong>${progress(obj)}%</strong><span>gepackt</span></div><div class="progress large"><i style="width:${progress(obj)}%"></i></div><p>${packed} von ${obj.items.length} Dingen sind im Koffer</p></section>` : ''}
-    <section class="checklist"><div class="checklist-title"><h3>${isTrip ? 'Was noch in den Koffer muss' : 'Dinge in dieser Vorlage'}</h3><button class="link-btn" data-action="add-item">+ Sache hinzufügen</button></div><div class="items">${obj.items.map((item) => `<label class="check-item ${item.packed ? 'done' : ''}">${isTrip ? `<input type="checkbox" data-check="${item.id}" ${item.packed ? 'checked' : ''}><span class="custom-check">${icon('check')}</span>` : '<span class="dot"></span>'}<span>${esc(item.name)}</span><button data-delete-item="${item.id}" aria-label="Eintrag löschen">${icon('trash')}</button></label>`).join('')}</div>${!obj.items.length ? '<div class="empty small"><p>Diese Liste ist noch leer.</p></div>' : ''}</section>
+    <section class="checklist"><div class="checklist-title"><h3>${isTrip ? 'Was noch in den Koffer muss' : 'Dinge in dieser Vorlage'}</h3><button class="link-btn" data-action="add-item">+ Sache hinzufügen</button></div><div class="items">${obj.items.map((item) => `<div class="check-item ${item.packed ? 'done' : ''}">${isTrip ? `<label class="check-toggle"><input type="checkbox" data-check="${item.id}" ${item.packed ? 'checked' : ''}><span class="custom-check">${icon('check')}</span><span>${esc(item.name)}</span></label>` : `<span class="dot"></span><span>${esc(item.name)}</span>`}<div class="item-actions"><button data-edit-item="${item.id}" aria-label="${esc(item.name)} bearbeiten">${icon('edit')}</button><button data-delete-item="${item.id}" aria-label="${esc(item.name)} löschen">${icon('trash')}</button></div></div>`).join('')}</div>${!obj.items.length ? '<div class="empty small"><p>Diese Liste ist noch leer.</p></div>' : ''}</section>
   </main>`
 }
 function modal() {
   if (!view.modal) return ''
   if (view.modal === 'auth') return `<div class="modal-wrap"><div class="modal auth-modal"><button class="modal-close" data-action="modal-close">${icon('close')}</button><span class="modal-symbol">${icon('logo')}</span><span class="kicker">CLOUD-SYNCHRONISIERUNG</span><h2>${view.authMode === 'login' ? 'Willkommen zurück' : 'Konto erstellen'}</h2><p>Deine Listen sind so auf allen Geräten verfügbar.</p><form id="auth-form"><label>E-Mail<input name="email" type="email" required placeholder="du@beispiel.de"></label><label>Passwort<input name="password" type="password" required minlength="6" placeholder="Mindestens 6 Zeichen"></label><button class="primary wide" type="submit">${view.authMode === 'login' ? 'Anmelden' : 'Registrieren'}</button></form><button class="auth-switch" data-action="auth-switch">${view.authMode === 'login' ? 'Noch kein Konto? Jetzt registrieren' : 'Schon registriert? Jetzt anmelden'}</button></div></div>`
-  if (view.modal === 'item') return `<div class="modal-wrap"><div class="modal small-modal"><button class="modal-close" data-action="modal-close">${icon('close')}</button><span class="kicker">LISTE ERGÄNZEN</span><h2>Neue Sache</h2><form id="item-form"><label>Was möchtest du einpacken?<input name="name" required autofocus placeholder="z. B. Sonnenhut"></label><button class="primary wide" type="submit">Hinzufügen</button></form></div></div>`
+  if (view.modal === 'item') {
+    const obj = (view.page === 'trip' ? state.trips : state.templates).find(x => x.id === view.selectedId)
+    const item = obj?.items.find(x => x.id === view.editItemId)
+    return `<div class="modal-wrap"><div class="modal small-modal"><button class="modal-close" data-action="modal-close">${icon('close')}</button><span class="kicker">${item ? 'EINTRAG BEARBEITEN' : 'LISTE ERGÄNZEN'}</span><h2>${item ? 'Sache bearbeiten' : 'Neue Sache'}</h2><form id="item-form"><label>Was möchtest du einpacken?<input name="name" required autofocus value="${esc(item?.name)}" placeholder="z. B. Sonnenhut"></label><button class="primary wide" type="submit">${item ? 'Änderungen speichern' : 'Hinzufügen'}</button></form></div></div>`
+  }
   const tripMode = view.modal === 'trip'; const data = (tripMode ? state.trips : state.templates).find(x => x.id === view.editId)
   return `<div class="modal-wrap"><div class="modal"><button class="modal-close" data-action="modal-close">${icon('close')}</button><span class="kicker">${data ? 'BEARBEITEN' : 'NEU ANLEGEN'}</span><h2>${data ? (tripMode ? 'Reise bearbeiten' : 'Vorlage bearbeiten') : (tripMode ? 'Wohin geht es?' : 'Neue Vorlage')}</h2><p>${tripMode ? 'Plane dein nächstes Abenteuer und starte gut vorbereitet.' : 'Erstelle eine Packliste, die du immer wieder nutzen kannst.'}</p><form id="entity-form">
     <label>${tripMode ? 'Name der Reise' : 'Name der Vorlage'}<input name="name" required value="${esc(data?.name)}" placeholder="${tripMode ? 'z. B. Mallorca 2026' : 'z. B. Städtetrip'}"></label>
@@ -120,9 +124,9 @@ document.addEventListener('click', (e) => {
   const action = target.dataset.action
   if (action === 'nav-open') view.mobileNav = true
   if (action === 'nav-close') view.mobileNav = false
-  if (action === 'modal-close') { view.modal = null; view.editId = null }
+  if (action === 'modal-close') { view.modal = null; view.editId = null; view.editItemId = null }
   if (action === 'edit-current') { view.modal = view.page; view.editId = view.selectedId }
-  if (action === 'add-item') view.modal = 'item'
+  if (action === 'add-item') { view.modal = 'item'; view.editItemId = null }
   if (action === 'delete-current' && confirm('Möchtest du diesen Eintrag wirklich löschen?')) {
     const collection = view.page === 'trip' ? state.trips : state.templates
     collection.splice(collection.findIndex(x => x.id === view.selectedId), 1); view.page = view.page === 'trip' ? 'trips' : 'templates'; persist(); toast('Eintrag gelöscht')
@@ -130,6 +134,9 @@ document.addEventListener('click', (e) => {
   if (target.dataset.deleteItem) {
     e.preventDefault(); const obj = (view.page === 'trip' ? state.trips : state.templates).find(x => x.id === view.selectedId)
     obj.items = obj.items.filter(i => i.id !== target.dataset.deleteItem); persist(); toast('Sache entfernt')
+  }
+  if (target.dataset.editItem) {
+    e.preventDefault(); view.modal = 'item'; view.editItemId = target.dataset.editItem
   }
   if (action === 'auth') { if (getSession()) { clearSession(); toast('Du wurdest abgemeldet') } else view.modal = 'auth' }
   if (action === 'auth-switch') view.authMode = view.authMode === 'login' ? 'signup' : 'login'
@@ -149,7 +156,13 @@ document.addEventListener('submit', async (e) => {
     else collection.push({ id: id(), name: form.get('name'), description: form.get('description'), icon: form.get('emoji'), color: form.get('color'), items: [] })
     view.modal = null; view.editId = null; persist(); toast(existing ? 'Änderungen gespeichert' : 'Erfolgreich erstellt')
   }
-  if (e.target.id === 'item-form') { const obj = (view.page === 'trip' ? state.trips : state.templates).find(x => x.id === view.selectedId); obj.items.push({ id: id(), name: form.get('name'), ...(view.page === 'trip' ? { packed: false } : {}) }); view.modal = null; persist(); toast('Sache hinzugefügt') }
+  if (e.target.id === 'item-form') {
+    const obj = (view.page === 'trip' ? state.trips : state.templates).find(x => x.id === view.selectedId)
+    const item = obj.items.find(x => x.id === view.editItemId)
+    if (item) item.name = form.get('name')
+    else obj.items.push({ id: id(), name: form.get('name'), ...(view.page === 'trip' ? { packed: false } : {}) })
+    view.modal = null; view.editItemId = null; persist(); toast(item ? 'Änderungen gespeichert' : 'Sache hinzugefügt')
+  }
   if (e.target.id === 'auth-form') { try { const result = await authenticate(form.get('email'), form.get('password'), view.authMode); if (result.access_token) { state = await loadCloudData().catch(() => state); view.modal = null; toast('Erfolgreich angemeldet') } else toast('Bitte bestätige deine E-Mail.', 'success') } catch (error) { toast(error.message, 'error') } }
   render()
 })
