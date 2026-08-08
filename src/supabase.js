@@ -1,5 +1,5 @@
-const url = globalThis.PACKFERTIG_CONFIG?.supabaseUrl || ''
-const key = globalThis.PACKFERTIG_CONFIG?.supabasePublishableKey || ''
+const url = (globalThis.PACKFERTIG_CONFIG?.supabaseUrl || '').trim().replace(/\/+$/, '')
+const key = (globalThis.PACKFERTIG_CONFIG?.supabasePublishableKey || '').trim()
 const sessionKey = 'packfertig_session'
 
 export const isSupabaseConfigured = Boolean(url && key && !url.includes('your-project'))
@@ -10,7 +10,12 @@ async function request(path, options = {}, authenticated = false) {
   const session = getSession()
   const headers = { apikey: key, 'Content-Type': 'application/json', ...options.headers }
   if (authenticated && session?.access_token) headers.Authorization = `Bearer ${session.access_token}`
-  const response = await fetch(`${url}${path}`, { ...options, headers })
+  let response
+  try {
+    response = await fetch(`${url}${path}`, { ...options, headers })
+  } catch (error) {
+    throw new Error(`Supabase ist nicht erreichbar. Bitte Project URL, Publishable Key und Deployment-Konfiguration prüfen. (${error.message})`)
+  }
   const data = response.status === 204 ? null : await response.json().catch(() => null)
   if (!response.ok) throw new Error(data?.msg || data?.message || data?.error_description || 'Supabase-Anfrage fehlgeschlagen')
   return data
