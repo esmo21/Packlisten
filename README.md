@@ -1,6 +1,6 @@
 # Packfertig
 
-Eine responsive Web-App für wiederverwendbare Packlisten-Vorlagen und konkrete Reisen. Im Demo-Modus werden Daten lokal im Browser gespeichert; mit Supabase stehen Anmeldung und geräteübergreifende Synchronisierung zur Verfügung.
+Eine super responsive Web-App für wiederverwendbare Packlisten-Vorlagen und konkrete Reisen. Im Demo-Modus werden Daten lokal im Browser gespeichert; mit Supabase stehen Anmeldung und geräteübergreifende Synchronisierung zur Verfügung.
 
 ## Lokal starten
 
