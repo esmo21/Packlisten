@@ -26,3 +26,13 @@ test('submit buttons are left to the submit handler', async () => {
   assert.ok(renderAfterClick > submitGuard, 'the guard must run before click-triggered rendering')
   assert.ok(submitHandler > renderAfterClick)
 })
+test('Supabase URL is normalized and sessions load cloud data on startup', async () => {
+  const client = await readFile('src/supabase.js', 'utf8')
+  const app = await readFile('src/app.js', 'utf8')
+
+  assert.match(client, /replace\(\/\\\/\+\$\/, ''\)/)
+  assert.match(app, /async function useCloudData\(\)/)
+  assert.match(app, /if \(isSupabaseConfigured && getSession\(\)\)/)
+  assert.match(app, /await useCloudData\(\)/)
+  assert.match(app, /cloudSave = cloudSave\.catch/)
+})

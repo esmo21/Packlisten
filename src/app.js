@@ -33,10 +33,27 @@ if (!state.trips.length) {
   state.trips.push({ id: id(), name: 'Mallorca 2026', destination: 'Mallorca, Spanien', startDate: '2026-09-14', endDate: '2026-09-24', templateId: template.id, items: template.items.map((item, i) => ({ ...clone(item), id: id(), packed: i < 3 })) })
 }
 let view = { page: 'home', selectedId: null, modal: null, editId: null, editItemId: null, mobileNav: false, authMode: 'login' }
+let cloudSave = Promise.resolve()
 
 function persist() {
   localStorage.setItem('packfertig_data', JSON.stringify(state))
-  if (isSupabaseConfigured && getSession()) saveCloudData(state).catch(() => toast('Cloud-Synchronisierung fehlgeschlagen', 'error'))
+  localStorage.setItem('packfertig_has_changes', 'true')
+  if (isSupabaseConfigured && getSession()) {
+    const snapshot = clone(state)
+    cloudSave = cloudSave.catch(() => {}).then(() => saveCloudData(snapshot))
+    cloudSave.catch((error) => toast(`Cloud-Synchronisierung fehlgeschlagen: ${error.message}`, 'error'))
+  }
+  return cloudSave
+}
+
+async function useCloudData() {
+  const cloud = await loadCloudData()
+  const cloudHasData = cloud.templates.length > 0 || cloud.trips.length > 0
+  if (cloudHasData) state = cloud
+  else if (localStorage.getItem('packfertig_has_changes') === 'true') await saveCloudData(state)
+  else state = { templates: [], trips: [] }
+  localStorage.setItem('packfertig_data', JSON.stringify(state))
+  localStorage.removeItem('packfertig_has_changes')
 }
 const esc = (s = '') => String(s).replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[c])
 const formatDate = (date) => date ? new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${date}T12:00:00`)) : 'Noch offen'
@@ -140,6 +157,7 @@ document.addEventListener('click', (e) => {
   if (target.dataset.editItem) {
     e.preventDefault(); view.modal = 'item'; view.editItemId = target.dataset.editItem
   }
+  if (action === 'auth') { if (getSession()) { clearSession(); localStorage.removeItem('packfertig_data'); localStorage.removeItem('packfertig_has_changes'); state = clone(demo); toast('Du wurdest abgemeldet') } else view.modal = 'auth' }
   if (action === 'auth') { if (getSession()) { clearSession(); toast('Du wurdest abgemeldet') } else view.modal = 'auth' }
   if (action === 'auth-switch') view.authMode = view.authMode === 'login' ? 'signup' : 'login'
   render()
@@ -168,4 +186,12 @@ document.addEventListener('submit', async (e) => {
   if (e.target.id === 'auth-form') { try { const result = await authenticate(form.get('email'), form.get('password'), view.authMode); if (result.access_token) { state = await loadCloudData().catch(() => state); view.modal = null; toast('Erfolgreich angemeldet') } else toast('Bitte bestätige deine E-Mail.', 'success') } catch (error) { toast(error.message, 'error') } }
   render()
 })
-render()
+
+async function start() {
+  if (isSupabaseConfigured && getSession()) {
+    try { await useCloudData() }
+    catch (error) { toast(`Cloud-Daten konnten nicht geladen werden: ${error.message}`, 'error') }
+  }
+  render()
+}
+start()

@@ -17,6 +17,16 @@ npm run dev
 3. Unter **Authentication → URL Configuration** die Website- und Redirect-URL hinterlegen.
 4. Für die lokale Entwicklung Project URL und Publishable Key in `config.js` einsetzen. Die beiden Werte sind öffentliche Frontend-Konfiguration; echte Secret Keys gehören niemals in diese Datei.
 
+Die Project URL muss die Form `https://PROJECT.supabase.co` haben (nicht die URL des
+Supabase-Dashboards). Supabase Auth und die REST API erlauben Browserzugriffe bereits;
+eine CORS-Browsererweiterung oder ein eigener Proxy ist nicht erforderlich. Bei einer
+gehosteten App müssen die Build-Variablen gesetzt und die App danach neu deployt werden.
+
+Nach der Anmeldung werden Änderungen in Supabase gespeichert und beim nächsten Aufruf
+auf einem anderen Gerät wieder geladen. Dafür muss sich die andere Person mit demselben
+Konto anmelden. Ein geteilter Website-Link allein gibt aus Datenschutzgründen keinen
+Zugriff auf die persönlichen Listen.
+
 Für einen Deployment-Build können die öffentlichen Werte als Umgebungsvariablen übergeben werden:
 
 ```bash
