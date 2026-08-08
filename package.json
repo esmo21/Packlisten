@@ -1,0 +1,12 @@
+{
+  "name": "packfertig",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "python3 -m http.server 4173",
+    "build": "node scripts/build.mjs",
+    "test": "node --test",
+    "check": "node --check src/app.js && node --check src/supabase.js"
+  }
+}
