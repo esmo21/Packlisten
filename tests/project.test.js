@@ -3,7 +3,10 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 test('HTML loads the application module', async () => {
   const html = await readFile('index.html', 'utf8')
-  assert.match(html, /src\/app\.js/)
+  assert.match(html, /src="\.\/src\/app\.js"/)
+  assert.match(html, /href="\.\/src\/styles\.css"/)
+  assert.match(html, /src="\.\/config\.js"/)
+  assert.doesNotMatch(html, /(?:src|href)="\/(?:src\/|config\.js)/)
   assert.match(html, /lang="de"/)
 })
 test('database schema enables row level security', async () => {
