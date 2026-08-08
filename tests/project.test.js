@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
+import { spawnSync } from 'node:child_process'
 test('HTML loads the application module', async () => {
   const html = await readFile('index.html', 'utf8')
   assert.match(html, /src="\.\/src\/app\.js"/)
@@ -35,4 +36,20 @@ test('Supabase URL is normalized and sessions load cloud data on startup', async
   assert.match(app, /if \(isSupabaseConfigured && getSession\(\)\)/)
   assert.match(app, /await useCloudData\(\)/)
   assert.match(app, /cloudSave = cloudSave\.catch/)
+})
+
+test('deployment build rejects missing or invalid Supabase configuration', () => {
+  const missing = spawnSync(process.execPath, ['scripts/build.mjs'], {
+    encoding: 'utf8',
+    env: { ...process.env, REQUIRE_SUPABASE_CONFIG: '1', VITE_SUPABASE_URL: '', VITE_SUPABASE_PUBLISHABLE_KEY: '' },
+  })
+  assert.notEqual(missing.status, 0)
+  assert.match(missing.stderr, /Supabase-Konfiguration fehlt/)
+
+  const invalid = spawnSync(process.execPath, ['scripts/build.mjs'], {
+    encoding: 'utf8',
+    env: { ...process.env, REQUIRE_SUPABASE_CONFIG: '1', VITE_SUPABASE_URL: 'https:\/\/github.com', VITE_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test' },
+  })
+  assert.notEqual(invalid.status, 0)
+  assert.match(invalid.stderr, /Project URL/)
 })
