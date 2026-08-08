@@ -8,5 +8,5 @@ const url = process.env.VITE_SUPABASE_URL || ''
 const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''
 await writeFile('dist/config.js', `window.PACKFERTIG_CONFIG = ${JSON.stringify({ supabaseUrl: url, supabasePublishableKey: key })}\n`)
 const html = await readFile('dist/index.html', 'utf8')
-if (!html.includes('/src/app.js')) throw new Error('App entry missing')
+if (!html.includes('./src/app.js')) throw new Error('Relative app entry missing')
 console.log('Build completed: dist/')
