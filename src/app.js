@@ -158,6 +158,7 @@ document.addEventListener('click', (e) => {
     e.preventDefault(); view.modal = 'item'; view.editItemId = target.dataset.editItem
   }
   if (action === 'auth') { if (getSession()) { clearSession(); localStorage.removeItem('packfertig_data'); localStorage.removeItem('packfertig_has_changes'); state = clone(demo); toast('Du wurdest abgemeldet') } else view.modal = 'auth' }
+  if (action === 'auth') { if (getSession()) { clearSession(); toast('Du wurdest abgemeldet') } else view.modal = 'auth' }
   if (action === 'auth-switch') view.authMode = view.authMode === 'login' ? 'signup' : 'login'
   render()
 })
@@ -182,7 +183,7 @@ document.addEventListener('submit', async (e) => {
     else obj.items.push({ id: id(), name: form.get('name'), ...(view.page === 'trip' ? { packed: false } : {}) })
     view.modal = null; view.editItemId = null; persist(); toast(item ? 'Änderungen gespeichert' : 'Sache hinzugefügt')
   }
-  if (e.target.id === 'auth-form') { try { const result = await authenticate(form.get('email'), form.get('password'), view.authMode); if (result.access_token) { await useCloudData(); view.modal = null; toast('Erfolgreich angemeldet – Cloud-Synchronisierung aktiv') } else toast('Bitte bestätige deine E-Mail.', 'success') } catch (error) { toast(error.message, 'error') } }
+  if (e.target.id === 'auth-form') { try { const result = await authenticate(form.get('email'), form.get('password'), view.authMode); if (result.access_token) { state = await loadCloudData().catch(() => state); view.modal = null; toast('Erfolgreich angemeldet') } else toast('Bitte bestätige deine E-Mail.', 'success') } catch (error) { toast(error.message, 'error') } }
   render()
 })
 
