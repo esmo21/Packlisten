@@ -14,3 +14,15 @@ test('database schema enables row level security', async () => {
   assert.equal((sql.match(/enable row level security/g) || []).length, 4)
   assert.match(sql, /auth\.uid\(\)/)
 })
+test('submit buttons are left to the submit handler', async () => {
+  const app = await readFile('src/app.js', 'utf8')
+  const clickHandler = app.indexOf("document.addEventListener('click'")
+  const submitGuard = app.indexOf("target.matches('button[type=\"submit\"]')", clickHandler)
+  const renderAfterClick = app.indexOf('render()', submitGuard)
+  const submitHandler = app.indexOf("document.addEventListener('submit'", renderAfterClick)
+
+  assert.ok(clickHandler >= 0)
+  assert.ok(submitGuard > clickHandler, 'click handling must ignore submit buttons')
+  assert.ok(renderAfterClick > submitGuard, 'the guard must run before click-triggered rendering')
+  assert.ok(submitHandler > renderAfterClick)
+})

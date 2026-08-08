@@ -114,6 +114,8 @@ function render() {
 
 document.addEventListener('click', (e) => {
   const target = e.target.closest('button,[data-open-trip],[data-open-template]'); if (!target) return
+  // Do not re-render a form before the browser can dispatch its submit event.
+  if (target.matches('button[type="submit"]')) return
   if (target.dataset.page) { view.page = target.dataset.page; view.selectedId = null; view.mobileNav = false }
   if (target.dataset.openTrip) { view.page = 'trip'; view.selectedId = target.dataset.openTrip }
   if (target.dataset.openTemplate) { view.page = 'template'; view.selectedId = target.dataset.openTemplate }
